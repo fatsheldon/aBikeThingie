@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace BikeDistributor.Test
 {
@@ -8,12 +9,20 @@ namespace BikeDistributor.Test
         private readonly static Bike Defy = new Bike("Giant", "Defy 1", Bike.OneThousand);
         private readonly static Bike Elite = new Bike("Specialized", "Venge Elite", Bike.TwoThousand);
         private readonly static Bike DuraAce = new Bike("Specialized", "S-Works Venge Dura-Ace", Bike.FiveThousand);
+        private readonly static Discount QuantityDiscount = new QuantityDiscount("quantity discount", new List<DiscountThreshold>
+        {
+            new DiscountThreshold{Discount = .1d, Price = 1000, Quantity = 20},
+            new DiscountThreshold{Discount = .2d, Price = 2000, Quantity = 10},
+            new DiscountThreshold{Discount = .2d, Price = 5000, Quantity = 5}
+        });
+        private readonly static TotalCoupon BirthdayCoupon = new TotalCoupon("happy birthday", 5d);
 
         [TestMethod]
         public void ReceiptOneDefy()
         {
             var order = new Order("Anywhere Bike Shop");
             order.AddLine(new Line(Defy, 1));
+            order.AddDiscount(QuantityDiscount);
             Assert.AreEqual(ResultStatementOneDefy, order.Receipt());
         }
 
@@ -22,6 +31,39 @@ namespace BikeDistributor.Test
 Sub-Total: $1,000.00
 Tax: $72.50
 Total: $1,072.50";
+
+        [TestMethod]
+        public void ReceiptOneDefyHappyBirthday()
+        {
+            var order = new Order("Anywhere Bike Shop");
+            order.AddLine(new Line(Defy, 1));
+            order.AddDiscount(BirthdayCoupon);
+            var orderReceipt = order.Receipt();
+            Assert.AreEqual(ResultStatementOneDefyHappyBirthday, orderReceipt);
+        }
+
+        private const string ResultStatementOneDefyHappyBirthday = @"Order Receipt for Anywhere Bike Shop
+	1 x Giant Defy 1 = $1,000.00
+Sub-Total: $995.00
+Tax: $72.14
+Total: $1,067.14";
+
+        [TestMethod]
+        public void ReceiptTwentyDefyHappyBirthday()
+        {
+            var order = new Order("Anywhere Bike Shop");
+            order.AddLine(new Line(Defy, 20));
+            order.AddDiscount(QuantityDiscount);
+            order.AddDiscount(BirthdayCoupon);
+            var orderReceipt = order.Receipt();
+            Assert.AreEqual(ResultStatementTwentyDefyHappyBirthday, orderReceipt);
+        }
+
+        private const string ResultStatementTwentyDefyHappyBirthday = @"Order Receipt for Anywhere Bike Shop
+	20 x Giant Defy 1 = $18,000.00
+Sub-Total: $17,995.00
+Tax: $1,304.64
+Total: $19,299.64";
 
         [TestMethod]
         public void ReceiptOneElite()
