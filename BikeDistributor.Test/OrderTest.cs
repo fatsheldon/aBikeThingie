@@ -6,22 +6,49 @@ namespace BikeDistributor.Test
     [TestClass]
     public class OrderTest
     {
-        private readonly static Bike Defy = new Bike("Giant", "Defy 1", Bike.OneThousand);
-        private readonly static Bike Elite = new Bike("Specialized", "Venge Elite", Bike.TwoThousand);
-        private readonly static Bike DuraAce = new Bike("Specialized", "S-Works Venge Dura-Ace", Bike.FiveThousand);
-        private readonly static Discount QuantityDiscount = new QuantityDiscount("quantity discount", new List<DiscountThreshold>
+        private readonly static Bike Defy = new Bike { Brand = "Giant", Model = "Defy 1", Price = 1000 };
+        private readonly static Bike Elite = new Bike { Brand = "Specialized", Model = "Venge Elite", Price = 2000 };
+        private readonly static Bike DuraAce = new Bike { Brand = "Specialized", Model = "S-Works Venge Dura-Ace", Price = 5000 };
+        private readonly static Bike XCut = new Bike { Brand = "Diamond", Model = "X-Cut", Price = 5950.00m };
+
+        private static readonly Discount QuantityDiscount = new QuantityDiscount
         {
-            new DiscountThreshold{Discount = .1d, Price = 1000, Quantity = 20},
-            new DiscountThreshold{Discount = .2d, Price = 2000, Quantity = 10},
-            new DiscountThreshold{Discount = .2d, Price = 5000, Quantity = 5}
-        });
-        private readonly static TotalCoupon BirthdayCoupon = new TotalCoupon("happy birthday", 5d);
+            Name = "quantity discount",
+            DiscountThresholds = new List<DiscountThreshold>
+            {
+                new DiscountThreshold {Discount = .1m, Price = 1000, Quantity = 20},
+                new DiscountThreshold {Discount = .2m, Price = 2000, Quantity = 10},
+                new DiscountThreshold {Discount = .2m, Price = 5000, Quantity = 5}
+            }
+        };
+
+        private static readonly TotalCoupon BirthdayCoupon = new TotalCoupon
+        {
+            Name = "happy birthday",
+            DiscountAmount = 5m
+        };
+
+        [TestMethod]
+        public void ReceiptFiveXCut()
+        {
+            var order = new Order("Anywhere Bike Shop");
+            order.AddLine(new Line {Bike = XCut, Quantity = 5});
+            order.AddDiscount(QuantityDiscount);
+            var orderReceipt = order.Receipt();
+            Assert.AreEqual(ResultStatementFiveXCut, orderReceipt);
+        }
+
+        private const string ResultStatementFiveXCut = @"Order Receipt for Anywhere Bike Shop
+	5 x Diamond X-Cut = $23,800.00
+Sub-Total: $23,800.00
+Tax: $1,725.50
+Total: $25,525.50";
 
         [TestMethod]
         public void ReceiptOneDefy()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(Defy, 1));
+            order.AddLine(new Line {Bike = Defy, Quantity = 1});
             order.AddDiscount(QuantityDiscount);
             Assert.AreEqual(ResultStatementOneDefy, order.Receipt());
         }
@@ -36,7 +63,7 @@ Total: $1,072.50";
         public void ReceiptOneDefyHappyBirthday()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(Defy, 1));
+            order.AddLine(new Line { Bike = Defy, Quantity = 1 });
             order.AddDiscount(BirthdayCoupon);
             var orderReceipt = order.Receipt();
             Assert.AreEqual(ResultStatementOneDefyHappyBirthday, orderReceipt);
@@ -52,7 +79,7 @@ Total: $1,067.14";
         public void ReceiptTwentyDefyHappyBirthday()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(Defy, 20));
+            order.AddLine(new Line {Bike = Defy, Quantity = 20});
             order.AddDiscount(QuantityDiscount);
             order.AddDiscount(BirthdayCoupon);
             var orderReceipt = order.Receipt();
@@ -69,7 +96,7 @@ Total: $19,299.64";
         public void ReceiptOneElite()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(Elite, 1));
+            order.AddLine(new Line {Bike = Elite, Quantity = 1});
             Assert.AreEqual(ResultStatementOneElite, order.Receipt());
         }
 
@@ -83,7 +110,7 @@ Total: $2,145.00";
         public void ReceiptOneDuraAce()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(DuraAce, 1));
+            order.AddLine(new Line {Bike = DuraAce, Quantity = 1});
             Assert.AreEqual(ResultStatementOneDuraAce, order.Receipt());
         }
 
@@ -97,7 +124,7 @@ Total: $5,362.50";
         public void HtmlReceiptOneDefy()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(Defy, 1));
+            order.AddLine(new Line {Bike = Defy, Quantity = 1});
             Assert.AreEqual(HtmlResultStatementOneDefy, order.HtmlReceipt());
         }
 
@@ -107,7 +134,7 @@ Total: $5,362.50";
         public void HtmlReceiptOneElite()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(Elite, 1));
+            order.AddLine(new Line {Bike = Elite, Quantity = 1});
             Assert.AreEqual(HtmlResultStatementOneElite, order.HtmlReceipt());
         }
 
@@ -117,11 +144,11 @@ Total: $5,362.50";
         public void HtmlReceiptOneDuraAce()
         {
             var order = new Order("Anywhere Bike Shop");
-            order.AddLine(new Line(DuraAce, 1));
+            order.AddLine(new Line {Bike = DuraAce, Quantity = 1});
             Assert.AreEqual(HtmlResultStatementOneDuraAce, order.HtmlReceipt());
         }
 
-        private const string HtmlResultStatementOneDuraAce = @"<html><body><h1>Order Receipt for Anywhere Bike Shop</h1><ul><li>1 x Specialized S-Works Venge Dura-Ace = $5,000.00</li></ul><h3>Sub-Total: $5,000.00</h3><h3>Tax: $362.50</h3><h2>Total: $5,362.50</h2></body></html>";    
+        private const string HtmlResultStatementOneDuraAce = @"<html><body><h1>Order Receipt for Anywhere Bike Shop</h1><ul><li>1 x Specialized S-Works Venge Dura-Ace = $5,000.00</li></ul><h3>Sub-Total: $5,000.00</h3><h3>Tax: $362.50</h3><h2>Total: $5,362.50</h2></body></html>";
     }
 }
 
