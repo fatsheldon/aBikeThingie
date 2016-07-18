@@ -7,41 +7,48 @@ namespace BikeDistributor
 {
     public class Order
     {
-        private const double TaxRate = .0725d;
-        private readonly IList<Line> _lines = new List<Line>();
-        private readonly IList<Discount> _discounts = new List<Discount>();  
+        public int Id { get; set; }
+        private const decimal TaxRate = .0725m;
+        public ICollection<Line> Lines { get; set; }
+        public ICollection<Discount> Discounts { get; set; }
+        public string Company { get; set; }
 
+        public Order()
+        {
+            Lines = new List<Line>();
+            Discounts = new List<Discount>();
+        }
         public Order(string company)
+            : this()
         {
             Company = company;
         }
 
-        public string Company { get; private set; }
 
         public void AddLine(Line line)
         {
-            _lines.Add(line);
+            Lines.Add(line);
         }
 
         public void AddDiscount(Discount discount)
         {
-            _discounts.Add(discount);
+            Discounts.Add(discount);
         }
 
         public string Receipt()
         {
-            var totalAmount = 0d;
+            var totalAmount = 0m;
             var result = new StringBuilder(string.Format("Order Receipt for {0}{1}", Company, Environment.NewLine));
-            foreach (var line in _lines)
+            foreach (var line in Lines)
             {
-                double thisAmount = line.Quantity * line.Bike.Price;
-                thisAmount = _discounts.Aggregate(thisAmount, (current, discount) => current - discount.GetLineDiscount(line));
+                var thisAmount = line.Quantity * line.Bike.Price;
+                thisAmount = Discounts.Aggregate(thisAmount, (current, discount) => current - discount.GetLineDiscount(line));
                 result.AppendLine(string.Format("\t{0} x {1} {2} = {3}", line.Quantity, line.Bike.Brand, line.Bike.Model, thisAmount.ToString("C")));
                 totalAmount += thisAmount;
             }
-            totalAmount = _discounts.Aggregate(totalAmount, (current, discount) => current - discount.GetTotalDiscount());
+            totalAmount = Discounts.Aggregate(totalAmount, (current, discount) => current - discount.GetTotalDiscount());
             result.AppendLine(string.Format("Sub-Total: {0}", totalAmount.ToString("C")));
-            var tax = totalAmount * TaxRate;
+            var tax = totalAmount * (decimal)TaxRate;
             result.AppendLine(string.Format("Tax: {0}", tax.ToString("C")));
             result.Append(string.Format("Total: {0}", (totalAmount + tax).ToString("C")));
             return result.ToString();
@@ -49,21 +56,21 @@ namespace BikeDistributor
 
         public string HtmlReceipt()
         {
-            var totalAmount = 0d;
+            var totalAmount = 0m;
             var result = new StringBuilder(string.Format("<html><body><h1>Order Receipt for {0}</h1>", Company));
-            if (_lines.Any())
+            if (Lines.Any())
             {
                 result.Append("<ul>");
-                foreach (var line in _lines)
+                foreach (var line in Lines)
                 {
-                    double thisAmount = line.Quantity * line.Bike.Price;
-                    thisAmount = _discounts.Aggregate(thisAmount, (current, discount) => current - discount.GetLineDiscount(line));
+                    var thisAmount = line.Quantity * line.Bike.Price;
+                    thisAmount = Discounts.Aggregate(thisAmount, (current, discount) => current - discount.GetLineDiscount(line));
                     result.Append(string.Format("<li>{0} x {1} {2} = {3}</li>", line.Quantity, line.Bike.Brand, line.Bike.Model, thisAmount.ToString("C")));
                     totalAmount += thisAmount;
                 }
                 result.Append("</ul>");
             }
-            totalAmount = _discounts.Aggregate(totalAmount, (current, discount) => current - discount.GetTotalDiscount());
+            totalAmount = Discounts.Aggregate(totalAmount, (current, discount) => current - discount.GetTotalDiscount());
             result.Append(string.Format("<h3>Sub-Total: {0}</h3>", totalAmount.ToString("C")));
             var tax = totalAmount * TaxRate;
             result.Append(string.Format("<h3>Tax: {0}</h3>", tax.ToString("C")));

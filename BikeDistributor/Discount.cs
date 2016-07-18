@@ -1,71 +1,72 @@
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 
 namespace BikeDistributor
 {
     public abstract class Discount : IDiscount
     {
-        public string Name { get; private set; }
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public ICollection<Order> Orders { get; set; } 
 
-        protected Discount(string name)
+        public virtual decimal GetLineDiscount(Line line)
         {
-            Name = name;
+            return 0m;
         }
 
-        public virtual double GetLineDiscount(Line line)
+        public virtual decimal GetTotalDiscount()
         {
-            return 0d;
-        }
-
-        public virtual double GetTotalDiscount()
-        {
-            return 0d;
+            return 0m;
         }
     }
 
     public interface IDiscount
     {
         string Name { get; }
-        double GetLineDiscount(Line line);
-        double GetTotalDiscount();
+        decimal GetLineDiscount(Line line);
+        decimal GetTotalDiscount();
     }
 
     public class DiscountThreshold
     {
+        public int Id { get; set; }
         public int Quantity { get; set; }
-        public double Price { get; set; }
-        public double Discount { get; set; }
+        public decimal Price { get; set; }
+        public decimal Discount { get; set; }
     }
 
     public class QuantityDiscount : Discount
     {
-        private readonly IEnumerable<DiscountThreshold> _discountThresholds; 
-        public QuantityDiscount(string name, IEnumerable<DiscountThreshold> discountThresholds) : base(name)
+        public ICollection<DiscountThreshold> DiscountThresholds { get; set; }
+
+        public QuantityDiscount()
         {
-            _discountThresholds = discountThresholds;
+            DiscountThresholds = new List<DiscountThreshold>();
         }
 
-        public override double GetLineDiscount(Line line)
+        public override decimal GetLineDiscount(Line line)
         {
-            var d = _discountThresholds
+            var d = DiscountThresholds
                 .Where(dt => line.Bike.Price >= dt.Price && line.Quantity >= dt.Quantity)
                 .OrderByDescending(dt => dt.Price)
                 .ToList();
-            return d.Any() ? d.First().Discount * line.Quantity * line.Bike.Price : 0d;
+            return d.Any() ? d.First().Discount * line.Quantity * line.Bike.Price : 0m;
+        }
+
+        public void AddThreshold(DiscountThreshold discountThreshold)
+        {
+            DiscountThresholds.Add(discountThreshold);
         }
     }
 
     public class TotalCoupon : Discount
     {
-        private readonly double _discountAmount;
-        public TotalCoupon(string name, double discountAmount) : base(name)
-        {
-            _discountAmount = discountAmount;
-        }
+        public decimal DiscountAmount { get; set; }
 
-        public override double GetTotalDiscount()
+        public override decimal GetTotalDiscount()
         {
-            return _discountAmount;
+            return DiscountAmount;
         }
     }
 }
